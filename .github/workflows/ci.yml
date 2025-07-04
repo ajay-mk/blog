@@ -1,0 +1,60 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'yarn'
+        
+    - name: Install dependencies
+      run: yarn install --frozen-lockfile
+      
+    - name: Run TypeScript check
+      run: npx tsc --noEmit
+      
+    - name: Run linting
+      run: yarn lint
+      
+    - name: Build and export
+      run: |
+        yarn build
+        cross-env EXPORT=true yarn build
+      
+    - name: Verify build outputs
+      run: |
+        # Check that builds succeeded
+        [ -d ".next" ] || (echo "❌ Next.js build failed" && exit 1)
+        [ -d "out" ] || (echo "❌ Static export failed" && exit 1)
+        [ -f "out/index.html" ] || (echo "❌ No homepage generated" && exit 1)
+        echo "✅ Builds successful"
+        
+    - name: Test critical pages
+      run: |
+        npm install -g serve
+        serve -s out -l 3000 &
+        sleep 5
+        
+        # Test key pages exist and load
+        curl -f http://localhost:3000 || (echo "❌ Homepage broken" && exit 1)
+        curl -f http://localhost:3000/blog || (echo "❌ Blog page broken" && exit 1)
+        curl -f http://localhost:3000/about || (echo "❌ About page broken" && exit 1)
+        
+        echo "✅ Critical pages working"
