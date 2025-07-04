@@ -27,6 +27,9 @@ jobs:
     - name: Install dependencies
       run: yarn install --frozen-lockfile
       
+    - name: Install cross-env globally
+      run: npm install -g cross-env
+      
     - name: Build project (generates Contentlayer types)
       run: yarn build
       
