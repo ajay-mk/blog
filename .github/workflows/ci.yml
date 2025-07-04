@@ -7,7 +7,7 @@ on:
     branches: [ main ]
 
 jobs:
-  test:
+  build-and-test:
     runs-on: ubuntu-latest
     
     strategy:
@@ -27,16 +27,17 @@ jobs:
     - name: Install dependencies
       run: yarn install --frozen-lockfile
       
+    - name: Build project (generates Contentlayer types)
+      run: yarn build
+      
     - name: Run TypeScript check
       run: npx tsc --noEmit
       
     - name: Run linting
       run: yarn lint
       
-    - name: Build and export
-      run: |
-        yarn build
-        cross-env EXPORT=true yarn build
+    - name: Build static export
+      run: cross-env EXPORT=true yarn build
       
     - name: Verify build outputs
       run: |
